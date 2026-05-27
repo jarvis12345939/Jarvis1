@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jarvis - AI Asistan</title>
+  <meta name="theme-color" content="#030712" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon.png" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sora', sans-serif;
+      background: radial-gradient(ellipse at top, #0f2027 0%, #030712 60%);
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px;
+    }
+    #app {
+      width: 100%; max-width: 600px;
+      height: 92vh; height: 92dvh;
+      display: flex; flex-direction: column;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(110,231,183,0.15);
+      border-radius: 24px; overflow: hidden;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 25px 80px rgba(0,0,0,0.6);
+    }
+    #header {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(110,231,183,0.1);
+      background: rgba(255,255,255,0.02);
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+    #avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, #6ee7b7, #3b82f6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; box-shadow: 0 0 20px rgba(110,231,183,0.3);
+    }
+    #name { color: #f0fdf4; font-weight: 600; font-size: 15px; }
+    #status { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+    #dot { width: 7px; height: 7px; border-radius: 50%; background: #6ee7b7; animation: pulse 2s infinite; }
+    #status span { color: #6ee7b7; font-size: 11px; }
+    #badge { margin-left: auto; color: rgba(255,255,255,0.25); font-size: 11px; }
+    #messages { flex: 1; overflow-y: auto; padding: 16px 12px; scroll-behavior: smooth; }
+    #messages::-webkit-scrollbar { width: 3px; }
+    #messages::-webkit-scrollbar-thumb { background: rgba(110,231,183,0.3); border-radius: 2px; }
+    .msg-row { display: flex; margin-bottom: 12px; animation: fadeIn 0.3s ease; }
+    .msg-row.user { justify-content: flex-end; }
+    .msg-row.bot { justify-content: flex-start; }
+    .bot-icon {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #6ee7b7, #3b82f6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; margin-right: 8px;
+      box-shadow: 0 0 10px rgba(110,231,183,0.3);
+      align-self: flex-end;
+    }
+    .user-icon {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; margin-left: 8px; align-self: flex-end;
+    }
+    .bubble {
+      max-width: 72%; padding: 10px 14px;
+      font-size: 14px; line-height: 1.6; color: #f0fdf4;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .bubble.user {
+      border-radius: 18px 18px 4px 18px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+    }
+    .bubble.bot {
+      border-radius: 18px 18px 18px 4px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(110,231,183,0.2);
+    }
+    #input-area {
+      padding: 12px; flex-shrink: 0;
+      border-top: 1px solid rgba(110,231,183,0.1);
+      background: rgba(255,255,255,0.02);
+      display: flex; gap: 8px; align-items: flex-end;
+    }
+    #input {
+      flex: 1; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(110,231,183,0.2);
+      border-radius: 14px; padding: 10px 14px;
+      color: #f0fdf4; font-size: 14px;
+      font-family: 'Sora', sans-serif; line-height: 1.5;
+      resize: none; max-height: 100px; overflow-y: auto;
+      outline: none; transition: border-color 0.2s;
+    }
+    #input:focus { border-color: rgba(110,231,183,0.5); }
+    #input::placeholder { color: rgba(255,255,255,0.3); }
+    #send {
+      width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg, #6ee7b7, #3b82f6);
+      border: none; cursor: pointer; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; box-shadow: 0 4px 15px rgba(110,231,183,0.3);
+    }
+    #send:disabled { background: rgba(255,255,255,0.08); cursor: not-allowed; box-shadow: none; }
+    .typing { display: flex; align-items: center; gap: 6px; padding: 12px 14px; }
+    .typing span { width: 7px; height: 7px; border-radius: 50%; background: #6ee7b7; display: inline-block; }
+    .typing span:nth-child(1) { animation: bounce 1.2s 0s infinite; }
+    .typing span:nth-child(2) { animation: bounce 1.2s 0.2s infinite; }
+    .typing span:nth-child(3) { animation: bounce 1.2s 0.4s infinite; }
+    @keyframes bounce { 0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-5px);opacity:1} }
+    @keyframes pulse { 0%,100%{opacity:.6}50%{opacity:1} }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div id="avatar">🤖</div>
+    <div>
+      <div id="name">Jarvis</div>
+      <div id="status"><div id="dot"></div><span>Çevrimiçi</span></div>
+    </div>
+    <div id="badge">Gemini 2.0 Flash ✦</div>
+  </div>
+  <div id="messages"></div>
+  <div id="input-area">
+    <textarea id="input" rows="1" placeholder="Bir şey sor…"></textarea>
+    <button id="send">➤</button>
+  </div>
+</div>
+
+<script>
+// ⬇️ BURAYA KENDİ GEMİNİ API ANAHTARINI YAZ
+const API_KEY = "BURAYA_API_ANAHTARINI_YAZ";
+
+const SYSTEM = `Sen "Jarvis" adında yardımsever, dürüst bir Türkçe yapay zeka asistanısın.
+- Her zaman Türkçe yanıt ver.
+- Bilmediğin veya emin olmadığın şeyler için dürüstçe "Bu konuda kesin bilgiye sahip değilim, bilmiyorum." de.
+- Kısa ve öz cevaplar ver, gerekmedikçe uzatma.`;
+
+let history = [];
+
+const messagesEl = document.getElementById("messages");
+const inputEl = document.getElementById("input");
+const sendBtn = document.getElementById("send");
+
+function addMessage(role, text) {
+  const row = document.createElement("div");
+  row.className = "msg-row " + (role === "user" ? "user" : "bot");
+  if (role === "bot") {
+    const icon = document.createElement("div");
+    icon.className = "bot-icon"; icon.textContent = "🤖";
+    row.appendChild(icon);
+  }
+  const bubble = document.createElement("div");
+  bubble.className = "bubble " + (role === "user" ? "user" : "bot");
+  bubble.textContent = text;
+  row.appendChild(bubble);
+  if (role === "user") {
+    const icon = document.createElement("div");
+    icon.className = "user-icon"; icon.textContent = "👤";
+    row.appendChild(icon);
+  }
+  messagesEl.appendChild(row);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return bubble;
+}
+
+function addTyping() {
+  const row = document.createElement("div");
+  row.className = "msg-row bot";
+  const icon = document.createElement("div");
+  icon.className = "bot-icon"; icon.textContent = "🤖";
+  row.appendChild(icon);
+  const bubble = document.createElement("div");
+  bubble.className = "bubble bot";
+  bubble.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+  row.appendChild(bubble);
+  messagesEl.appendChild(row);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return row;
+}
+
+async function send() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = "";
+  inputEl.style.height = "auto";
+  sendBtn.disabled = true;
+
+  addMessage("user", text);
+  history.push({ role: "user", parts: [{ text }] });
+
+  const typingEl = addTyping();
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM }] },
+          contents: history,
+          generationConfig: { maxOutputTokens: 1000 }
+        })
+      }
+    );
+
+    const data = await res.json();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Bir hata oluştu.";
+
+    typingEl.remove();
+    addMessage("bot", reply);
+    history.push({ role: "model", parts: [{ text: reply }] });
+
+  } catch (e) {
+    typingEl.remove();
+    addMessage("bot", "Bağlantı hatası. Lütfen tekrar dene.");
+  }
+
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+
+sendBtn.addEventListener("click", send);
+inputEl.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+});
+inputEl.addEventListener("input", () => {
+  inputEl.style.height = "auto";
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + "px";
+});
+
+addMessage("bot", "Merhaba! Ben Jarvis 🤖 Senin kişisel yardımcınım. Ne sormak istersin?");
+</script>
+</body>
+</html>
